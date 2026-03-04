@@ -1,0 +1,255 @@
+============================================================
+   PANDUAN LENGKAP: SETUP WEB2APK DI VPS UBUNTU 22
+   Menggunakan GitHub + Termius (HP)
+============================================================
+
+
+============================================================
+PERSIAPAN SEBELUM MULAI
+============================================================
+
+Yang kamu butuhkan:
+  - HP dengan aplikasi Termius terinstall
+  - VPS Ubuntu 22.04 (RAM minimal 2GB, disarankan 4GB)
+  - IP Address VPS + password root
+  - Token Bot Telegram (dari @BotFather)
+  - File .env sudah diupload ke GitHub
+
+Spesifikasi VPS minimum:
+  RAM      : 2 GB (disarankan 4 GB)
+  CPU      : 1 Core (disarankan 2 Core)
+  Storage  : 20 GB (disarankan 40 GB)
+  OS       : Ubuntu 22.04
+
+
+============================================================
+STEP 1 — CONNECT KE VPS LEWAT TERMIUS
+============================================================
+
+1. Buka aplikasi Termius di HP
+2. Tap tombol "+" atau "New Host"
+3. Isi form berikut:
+     Hostname  : IP_VPS_KAMU
+     Username  : root
+     Password  : PASSWORD_VPS_KAMU
+4. Tap "Save"
+5. Tap nama host yang baru dibuat untuk Connect
+
+Tips Termius:
+  - Aktifkan "Keep Alive" di settings host agar
+    koneksi tidak mudah putus saat layar mati
+  - Gunakan fitur "Snippets" untuk simpan command
+    panjang agar tinggal tap saja
+
+
+============================================================
+STEP 2 — PERSIAPAN GITHUB
+============================================================
+
+Pastikan repo GitHub kamu sudah berisi:
+  - Semua source code web2apk
+  - File .env yang sudah diisi dengan:
+      BOT_TOKEN      = Token dari @BotFather
+      ADMIN_IDS      = ID Telegram kamu
+      WEB_HOST       = 0.0.0.0
+      WEB_PORT       = 3000
+      WEB_URL        = http://IP_VPS_KAMU:3000
+      ALLOWED_DOMAINS= localhost,127.0.0.1,IP_VPS_KAMU
+      SERVER_LICENSE_KEY  = (generate sendiri, lihat Step 4)
+      ANTI_CLONE_SECRET   = (generate sendiri, lihat Step 4)
+      MAX_CONCURRENT_BUILDS = 1
+
+Repo contoh: https://github.com/agus334/webtoapk
+
+
+============================================================
+STEP 3 — JALANKAN COMMAND SETUP (SEKALI TAP)
+============================================================
+
+Copy-paste SEMUA command di bawah ini sekaligus
+ke terminal Termius, lalu tekan Enter:
+
+------------------------------------------------------------
+rm -rf ~/webtoapk ~/web2apk && git clone https://github.com/agus334/webtoapk.git && cd webtoapk && chmod +x scripts/setup-vps.sh && ./scripts/setup-vps.sh && source ~/.bashrc && wget -O .env https://raw.githubusercontent.com/agus334/webtoapk/main/.env && npm install && pm2 start src/bot.js --name "web2apk" && pm2 startup && pm2 save && sudo ufw allow 22 && sudo ufw allow 3000 && sudo ufw enable
+------------------------------------------------------------
+
+GANTI "agus334/webtoapk" dengan username/repo GitHub kamu!
+
+Yang dikerjakan otomatis oleh command ini:
+  [1] Hapus folder lama (jika ada)
+  [2] Clone repo dari GitHub
+  [3] Jalankan setup-vps.sh (install semua dependensi)
+  [4] Reload environment (.bashrc)
+  [5] Download file .env dari GitHub
+  [6] Install npm dependencies
+  [7] Jalankan bot dengan PM2
+  [8] Setup PM2 agar auto-start saat VPS reboot
+  [9] Buka firewall port 22 dan 3000
+
+PERHATIAN:
+  - Proses setup bisa memakan waktu 10-30 menit
+  - Jangan tutup Termius selama proses berlangsung!
+  - Jika muncul dialog "Daemons using outdated libraries"
+    langsung tekan Enter saja (pilih OK)
+
+
+============================================================
+STEP 4 — GENERATE SECURITY KEYS (JIKA BELUM ADA DI .ENV)
+============================================================
+
+Jika .env kamu belum ada SERVER_LICENSE_KEY dan
+ANTI_CLONE_SECRET, generate dengan command ini:
+
+Generate License Key:
+------------------------------------------------------------
+node -e "console.log(require('crypto').randomUUID())"
+------------------------------------------------------------
+
+Generate Anti-Clone Secret:
+------------------------------------------------------------
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+------------------------------------------------------------
+
+Copy hasilnya dan masukkan ke file .env:
+------------------------------------------------------------
+nano ~/webtoapk/.env
+------------------------------------------------------------
+
+Cara edit di nano (dari Termius HP):
+  - Navigasi pakai keyboard layar
+  - Setelah selesai edit:
+      Ctrl + X  →  Y  →  Enter
+
+Setelah edit .env, restart bot:
+------------------------------------------------------------
+pm2 restart web2apk
+------------------------------------------------------------
+
+
+============================================================
+STEP 5 — TAMBAH SWAP (WAJIB JIKA RAM <= 2GB)
+============================================================
+
+Jalankan command ini jika RAM VPS kamu 2GB atau kurang:
+
+------------------------------------------------------------
+sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+------------------------------------------------------------
+
+
+============================================================
+STEP 6 — CEK STATUS BOT
+============================================================
+
+Cek apakah bot berjalan:
+------------------------------------------------------------
+pm2 status
+------------------------------------------------------------
+
+Lihat log real-time:
+------------------------------------------------------------
+pm2 logs web2apk
+------------------------------------------------------------
+
+Jika sukses, akan muncul pesan:
+  🤖 Web2APK Bot berhasil dijalankan!
+  🌐 Web Dashboard: http://localhost:3000
+
+Akses dashboard dari browser HP/PC:
+  http://IP_VPS_KAMU:3000
+
+
+============================================================
+LANGKAH GANTI WATERMARK "LORD DZIK" DI SPLASH SCREEN
+============================================================
+
+Watermark Lord Dzik terletak di file:
+  android-template/app/src/main/res/layout/activity_main.xml
+
+Baris yang perlu diganti:
+  Baris 95  → "Lord Dzik"           (nama di splash screen)
+  Baris 107 → "Thank you for using this app"  (subtitle)
+  Baris 124 → "Powered by Web2APK"  (teks bawah)
+
+Command untuk ganti (ubah NAMA_KAMU sesuai keinginan):
+------------------------------------------------------------
+sed -i 's/Lord Dzik/NAMA_KAMU/g' ~/webtoapk/android-template/app/src/main/res/layout/activity_main.xml
+------------------------------------------------------------
+
+Contoh (ganti dengan "Agus Store"):
+------------------------------------------------------------
+sed -i 's/Lord Dzik/Agus Store/g' ~/webtoapk/android-template/app/src/main/res/layout/activity_main.xml
+------------------------------------------------------------
+
+Ganti juga teks lain di file yang sama jika perlu:
+------------------------------------------------------------
+sed -i 's/Thank you for using this app/TEKS_KAMU/g' ~/webtoapk/android-template/app/src/main/res/layout/activity_main.xml
+------------------------------------------------------------
+------------------------------------------------------------
+sed -i 's/Powered by Web2APK/TEKS_KAMU/g' ~/webtoapk/android-template/app/src/main/res/layout/activity_main.xml
+------------------------------------------------------------
+
+Restart bot setelah ganti:
+------------------------------------------------------------
+pm2 restart web2apk
+------------------------------------------------------------
+
+
+============================================================
+COMMAND BERGUNA SEHARI-HARI
+============================================================
+
+Cek status bot          : pm2 status
+Lihat log               : pm2 logs web2apk
+Restart bot             : pm2 restart web2apk
+Stop bot                : pm2 stop web2apk
+Jalankan bot            : pm2 start web2apk
+
+Update dari GitHub      :
+------------------------------------------------------------
+cd ~/webtoapk && git pull && npm install && pm2 restart web2apk
+------------------------------------------------------------
+
+
+============================================================
+TROUBLESHOOTING
+============================================================
+
+ERROR: "JAVA_HOME not set"
+  Solusi: source ~/.bashrc
+
+ERROR: "ANDROID_HOME not set"
+  Solusi: source ~/.bashrc
+
+ERROR: "web2apk already exist"
+  Solusi: rm -rf ~/webtoapk ~/web2apk
+          lalu jalankan ulang command clone
+
+ERROR: Bot tidak respond di Telegram
+  Solusi: pm2 logs web2apk (cek pesan errornya)
+
+ERROR: Port 3000 tidak bisa diakses dari browser
+  Solusi: sudo ufw allow 3000 && sudo ufw enable
+
+ERROR: Build APK gagal pertama kali
+  Ini normal! Build pertama mendownload Gradle
+  dependencies. Tunggu saja dan coba lagi.
+
+ERROR: Dialog "Daemons using outdated libraries"
+  Langsung tekan Enter saja (pilih OK), lanjut normal.
+
+
+============================================================
+UNINSTALL SEMUA (JIKA DIPERLUKAN)
+============================================================
+
+Hapus Web2APK + Node.js + Java + Android SDK + Flutter + PM2:
+
+------------------------------------------------------------
+pm2 stop all && pm2 delete all && pm2 kill && apt-get remove -y nodejs npm && apt-get purge -y nodejs npm && apt-get remove -y openjdk-17-jdk openjdk-17-jre && apt-get purge -y openjdk-17-jdk openjdk-17-jre && rm -rf ~/webtoapk ~/web2apk ~/android-sdk ~/flutter ~/.android ~/.pub-cache ~/.npm && sed -i '/JAVA_HOME\|ANDROID_HOME\|android-sdk\|flutter/d' ~/.bashrc && swapoff /swapfile 2>/dev/null; rm -f /swapfile; sed -i '/swapfile/d' /etc/fstab && apt-get autoremove -y && source ~/.bashrc
+------------------------------------------------------------
+
+
+============================================================
+   SELESAI! Bot Web2APK kamu sudah berjalan di VPS 🎉
+============================================================
